@@ -1,9 +1,99 @@
 const { ethers } = require("hardhat");
 const axios = require("axios");
 
+const ROOT_URL = "https://rednotice.run";
+
 async function main() {
 
-  const url = "http://localhost:3003/api/nft";
+  /*
+  const accounts = await hre.ethers.getSigners();
+  const account = accounts[0];
+
+  const collectionUrl = "http://localhost:3003/api/nft/collections";
+  const collections = await axios.get(collectionUrl);
+
+  for (let collection of collections.data) {
+    console.log("collection", collection);
+    if(collection.name === "ASHEN STABBING GUILT BROKEN MEMORY"){
+      continue;
+    }
+    const collectionAddress = collection.address;
+    const NFT = await ethers.getContractAt("RncToken", collectionAddress, account);
+    const maxTokenId = 11;
+    const tokenIds = [];
+
+    for (let i = 0; i < maxTokenId; i++) {
+      try {
+        const uri = await NFT.tokenURI(i);
+        tokenIds.push({
+          id: i,
+          uri
+        });
+      } catch (e) {
+        console.log("Error fetching token ID:", e);
+        break;
+      }
+    }
+
+    console.log("Accessible Token IDs:", tokenIds);
+
+    for (tokenData of tokenIds) {
+      const uri = tokenData.uri; //"https://rednotice.run/api/nft/token/ASHEN_STRIKING_PRISON_FORSAKEN_SORROW-BETRAYER_FATAL.json"
+
+      const tokenName = (uri.split('/').pop().split('.json')[0].split('-').pop()).replace(/_/g, " ");
+      console.log("CollectionName", collection.name);
+      console.log("Extracted Token Name:", tokenName);
+
+      const updateUrl = `http://localhost:3003/api/nft/update-token-by-name`;
+      try {
+        await axios.post(updateUrl, {
+          tokenId: tokenData.id,
+          collection: collection.name,
+          tokenName: tokenName
+        });
+        console.log(`Updated tokenId for NFT with ID: ${tokenData.id}`);
+      } catch (updateError) {
+        console.error(`Failed to update tokenId for NFT with ID: ${tokenData.id}`, updateError);
+      }
+
+    }
+
+
+
+  }
+
+
+
+  process.exit()
+
+  */
+
+
+  const accounts = await hre.ethers.getSigners();
+  const account = accounts[0];
+
+  const getCollectionList = async (collectionAddress) => {
+    const NFT = await ethers.getContractAt("RncToken", collectionAddress, account);
+    const maxTokenId = 11;
+    const tokenUris = [];
+
+    for (let i = 0; i < maxTokenId; i++) {
+      try {
+        const uri = await NFT.tokenURI(i);
+        tokenUris.push({
+          id: i,
+          uri
+        });
+      } catch (e) {
+        console.log("Error fetching token ID:", e);
+        break;
+      }
+    }
+
+    return tokenUris;
+  }
+
+  const url = `${ROOT_URL}/api/nft`;
 
   try {
     const response = await axios.get(url);
@@ -19,8 +109,6 @@ async function main() {
       const collectionName = item.collection;
       const nftName = item.name;
 
-      const accounts = await hre.ethers.getSigners();
-      const account = accounts[0];
 
       const ownerAddr = "0xA1Fe3F1e668e1F0BdD1818b8859C34Eea3BaC467";
 
@@ -33,6 +121,25 @@ async function main() {
       const tokenId = `${collectionUri}-${nftUri}`;
       const url = `https://rednotice.run/api/nft/token/${tokenId}.json`;
       console.log(url);
+
+      const minitedList = await getCollectionList(erc721address);
+      console.log(minitedList);
+      console.log(url);
+      const found = minitedList.find(item => item.uri === url);
+      if (found) {
+        const id = found.id;
+        try {
+          const updateUrl = `${ROOT_URL}/api/nft/update-token-id/${item.id}`;
+          await axios.post(updateUrl, { tokenId: id });
+          console.log(`Updated tokenId for NFT with ID: ${item.id}`);
+        } catch (updateError) {
+          console.error(`Failed to update tokenId for NFT with ID: ${item.id}`, updateError);
+        }
+
+        console.log("Already minted");
+        continue;
+      }
+
       const tx = await NFT.safeMint(
         ownerAddr,
         url
@@ -47,7 +154,7 @@ async function main() {
       console.log("Received Token ID:", receivedTokenId);
       console.log(`Minted NFT with name: ${nftName}`);
 
-      const updateUrl = `http://localhost:3003/api/nft/update-token-id/${item.id}`;
+      const updateUrl = `${ROOT_URL}/api/nft/update-token-id/${item.id}`;
       try {
         await axios.post(updateUrl, { tokenId: receivedTokenId });
         console.log(`Updated tokenId for NFT with ID: ${item.id}`);

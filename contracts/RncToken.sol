@@ -9,8 +9,8 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract RncToken is ERC721, ERC721URIStorage, Ownable {
     uint256 private _nextTokenId;
 
-    constructor(address initialOwner)
-        ERC721("TEST COLLECTION", "RNFT")
+    constructor(string memory name, string memory symb, address initialOwner)
+        ERC721(name, symb)
         Ownable(initialOwner)
     {}
 
